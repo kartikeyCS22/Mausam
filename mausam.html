@@ -137,7 +137,7 @@ const T=n=>unit==='f'?Math.round(n*9/5+32):Math.round(n),W=n=>unit==='f'?Math.ro
 const hr=t=>{const h=new Date(t).getHours();return (h%12||12)+(h<12?'a':'p')};
 
 function info(c,d){
-  if(c===0)return d?['Clear sky','.☀️','sun']:['Clear night','🌙','night'];
+  if(c===0)return d?['Clear sky','☀️','sun']:['Clear night','🌙','night'];
   if(c<=2)return ['Partly cloudy',d?'⛅':'☁️',d?'sun':'night'];
   if(c===3)return ['Overcast','☁️',d?'cloud':'cloudn'];
   if(c<=48)return ['Foggy','🌫️','fog'];
@@ -154,19 +154,29 @@ const dir=d=>['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
 
 async function load(p,quiet){
   if(!quiet)$('#load').classList.remove('off');
+  let w,a;
   try{
     const f=`https://api.open-meteo.com/v1/forecast?latitude=${p.lat}&longitude=${p.lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,is_day,weather_code,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,dew_point_2m,cloud_cover&hourly=temperature_2m,precipitation_probability,weather_code,is_day,uv_index,visibility,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max&timezone=auto&forecast_days=7`;
-    const [w,a]=await Promise.all([fetch(f).then(r=>r.json()),fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${p.lat}&longitude=${p.lon}&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide`).then(r=>r.json()).catch(()=>null)]);
-    if(w.error)throw 0;
+    const r=await fetch(f);if(!r.ok)throw new Error('Weather server replied '+r.status);
+    w=await r.json();if(w.error)throw new Error(w.reason||'Weather server error');
+    a=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${p.lat}&longitude=${p.lon}&current=us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide`).then(r=>r.json()).catch(()=>null);
+  }catch(e){
+    console.error('Mausam: fetch failed',e);
+    const c=ls('cache',null);
+    if(c&&!cur){place=c.p;try{draw(c.w,c.a)}catch(e2){console.error('Mausam: draw failed',e2)}note(' · ⚠ offline — showing saved data from '+new Date(c.t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}))}
+    else{note(' · ⚠ could not refresh');fail('Couldn\'t load weather data ('+esc(e.message||e)+'). Check your internet connection, or whether a firewall/ad-blocker is blocking api.open-meteo.com, then press Refresh.')}
+    $('#load').classList.add('off');return;
+  }
+  try{
     place=p;sv('place',p);sv('cache',{p,w,a:a?.current||null,t:Date.now()});
     draw(w,a?.current);note('');
   }catch(e){
-    const c=ls('cache',null);
-    if(c&&!cur){place=c.p;draw(c.w,c.a);note(' · ⚠ offline — showing saved data from '+new Date(c.t).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}))}
-    else note(' · ⚠ could not refresh, check your connection');
+    console.error('Mausam: draw failed',e);
+    note(' · ⚠ display error');fail('Weather loaded, but something went wrong showing it: '+esc(e.message||e));
   }
   $('#load').classList.add('off');
 }
+function fail(msg){$('#alerts').innerHTML=`<div class="glass al warn"><span>⚠️</span><span>${msg}</span></div>`}
 function note(x){$('#foot').innerHTML='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+x+'<br>Data: Open-Meteo · Maps: Windy · Places: OpenStreetMap · Refreshes every 10 min';}
 
 function count(to){const from=shown,t0=performance.now();(function s(t){const k=Math.min(1,(t-t0)/900);shown=Math.round(from+(to-from)*(1-Math.pow(1-k,4)));$('#temp').textContent=shown;if(k<1)requestAnimationFrame(s)})(t0)}
@@ -261,7 +271,7 @@ let tm;$('#q').oninput=e=>{clearTimeout(tm);const v=e.target.value.trim();if(v.l
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('#drop').style.display='none'});
 addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement.tagName!=='INPUT'){e.preventDefault();$('#q').focus()}});
 
-$('#geo').onclick=()=>{if(!navigator.geolocation)return alert('Geolocation is not supported');navigator.geolocation.getCurrentPosition(async p=>{let n='Your location';
+$('#geo').onclick=()=>{if(!navigator.geolocation||!window.isSecureContext||location.protocol==='file:')return alert('My location needs the page to be served over https:// or http://localhost (it does not work when opened as a local file). Search for a city instead.');navigator.geolocation.getCurrentPosition(async p=>{let n='Your location';
   try{const g=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&lat=${p.coords.latitude}&lon=${p.coords.longitude}`).then(r=>r.json());n=g.address?.city||g.address?.town||g.address?.village||g.address?.county||n}catch{}
   load({n,lat:p.coords.latitude,lon:p.coords.longitude})},()=>alert('Location permission denied — search for a city instead.'),{timeout:8000})};
 
@@ -292,4 +302,4 @@ function mkBolt(){let x=cv.width*(.1+Math.random()*.8),y=0;const pts=[[x,y]];whi
 $('#unit').textContent=U();chips();load(place);setInterval(()=>load(place,true),600000);
 </script>
 </body>
-</html>
+ </html>
