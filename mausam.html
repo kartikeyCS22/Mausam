@@ -137,7 +137,7 @@ const T=n=>unit==='f'?Math.round(n*9/5+32):Math.round(n),W=n=>unit==='f'?Math.ro
 const hr=t=>{const h=new Date(t).getHours();return (h%12||12)+(h<12?'a':'p')};
 
 function info(c,d){
-  if(c===0)return d?['Clear sky','☀️','sun']:['Clear night','🌙','night'];
+  if(c===0)return d?['Clear sky','.☀️','sun']:['Clear night','🌙','night'];
   if(c<=2)return ['Partly cloudy',d?'⛅':'☁️',d?'sun':'night'];
   if(c===3)return ['Overcast','☁️',d?'cloud':'cloudn'];
   if(c<=48)return ['Foggy','🌫️','fog'];
