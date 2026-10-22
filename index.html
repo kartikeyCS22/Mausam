@@ -340,7 +340,7 @@ const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&'
 const ls=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 let unit=ls('unit','c'),favs=ls('favs',[{n:'Delhi',lat:28.65,lon:77.23},{n:'Mumbai',lat:19.07,lon:72.88},{n:'London',lat:51.51,lon:-0.13},{n:'Tokyo',lat:35.69,lon:139.69},{n:'New York',lat:40.71,lon:-74}]),place=ls('place',favs[0]),metric='temp',ov='radar',cur=null,shown=0,off=0,lastEmoji='',lastC=null;
 const T=n=>unit==='f'?Math.round(n*9/5+32):Math.round(n),W=n=>unit==='f'?Math.round(n*.621)+' mph':Math.round(n)+' km/h',U=()=>unit==='f'?'°F':'°C';
-const hr=t=>{const h=new Date(t).getHours();return (h%12||12)+(h<12?'a':'p')};
+const hr=t=>{const h=new Date(t).getHours();return (h%12||12)+(h<12?' AM':' PM')};
 
 function info(c,d){
   if(c===0)return d?['Clear sky','☀️','sun']:['Clear night','🌙','night'];
